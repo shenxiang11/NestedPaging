@@ -4,28 +4,48 @@
 
 独立实现，**不依赖 JXPagingView**。最低 iOS 17。
 
+[https://github.com/shenxiang11/NestedPaging](https://github.com/shenxiang11/NestedPaging)
+
+## Demo
+
+打开 `Demo/NestedPagingDemo.xcodeproj`，选 NestedPagingDemo 跑起来。四种社交个人页都是同一套容器：外层吸顶，内层接手，左右切 tab。
+
+| 首页 | 个人主页 | 基础用法 |
+| :---: | :---: | :---: |
+| <img src="Docs/screenshots/home.png" width="240" alt="首页"> | <img src="Docs/screenshots/profile.png" width="240" alt="个人主页"> | <img src="Docs/screenshots/basic.png" width="240" alt="基础用法"> |
+
+| 抖音 | 小红书 | X | Instagram |
+| :---: | :---: | :---: | :---: |
+| <img src="Docs/screenshots/douyin.png" width="180" alt="抖音"> | <img src="Docs/screenshots/xiaohongshu.png" width="180" alt="小红书"> | <img src="Docs/screenshots/x.png" width="180" alt="X"> | <img src="Docs/screenshots/instagram.png" width="180" alt="Instagram"> |
+
+- **个人主页**：封面、导航栏渐变、table + collection
+- **基础用法**：最小接入，方便对照代码
+- **抖音**：深色封面、三列竖视频
+- **小红书**：双列笔记瀑布
+- **X**：Banner + 时间线，媒体页九宫格
+- **Instagram**：无大封面、Highlights、图标 tab、三列宫格
+
 ## 安装
 
 Xcode → 项目 → Package Dependencies → Add：
 
 ```
-https://github.com/<your-account>/NestedPaging
+https://github.com/shenxiang11/NestedPaging
 ```
 
-或本地路径：
+目前还没有版本 tag，请选 `main` 分支。或写进 `Package.swift`：
+
+```swift
+.package(url: "https://github.com/shenxiang11/NestedPaging", branch: "main")
+```
+
+本地路径：
 
 ```swift
 .package(path: "../NestedPaging")
 ```
 
 然后 `import NestedPaging`。
-
-## 跑 Demo
-
-打开 `Demo/NestedPagingDemo.xcodeproj`，选 NestedPagingDemo 跑起来。
-
-- **个人主页**：封面、导航栏渐变、table + collection
-- **基础用法**：最小接入，方便对照代码
 
 ## 快速接入
 
