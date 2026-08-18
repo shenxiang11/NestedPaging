@@ -1,66 +1,77 @@
 # NestedPaging
 
-微博 / 简书个人主页那种嵌套滚动：Header 滚走，分类栏吸顶，下面多个列表既能上下滚，也能左右切。
+[English](README.md) | [中文](README.zh-CN.md)
 
-独立实现，**不依赖 JXPagingView**。最低 iOS 17。
+A UIKit nested-scrolling container for pages with a header that scrolls away, a category bar that pins, and multiple child lists that scroll vertically and page horizontally.
 
-[https://github.com/shenxiang11/NestedPaging](https://github.com/shenxiang11/NestedPaging)
+Standalone implementation. No third-party dependencies.
 
-## Demo
-
-打开 `Demo/NestedPagingDemo.xcodeproj`，选 NestedPagingDemo 跑起来。四种社交个人页都是同一套容器：外层吸顶，内层接手，左右切 tab。
-
-| 抖音 | 小红书 | X | Instagram |
+| Douyin | Xiaohongshu | X | Instagram |
 | :---: | :---: | :---: | :---: |
-| <img src="Docs/screenshots/douyin.png" width="220" alt="抖音"> | <img src="Docs/screenshots/xiaohongshu.png" width="220" alt="小红书"> | <img src="Docs/screenshots/x.png" width="220" alt="X"> | <img src="Docs/screenshots/instagram.png" width="220" alt="Instagram"> |
+| <img src="Docs/screenshots/douyin.png" width="220" alt="Douyin"> | <img src="Docs/screenshots/xiaohongshu.png" width="220" alt="Xiaohongshu"> | <img src="Docs/screenshots/x.png" width="220" alt="X"> | <img src="Docs/screenshots/instagram.png" width="220" alt="Instagram"> |
 
-- **抖音**：深色封面、三列竖视频
-- **小红书**：双列笔记瀑布
-- **X**：Banner + 时间线，媒体页九宫格
-- **Instagram**：无大封面、Highlights、图标 tab、三列宫格
+Example project: `Demo/NestedPagingDemo.xcodeproj`. The screens above share one `NestedPagingView`. Only the header, pin bar, and child lists differ.
 
-## 安装
+## Requirements
 
-Xcode → 项目 → Package Dependencies → Add：
+- iOS 17+
+- Swift 5.9+
+- UIKit
+
+## Installation
+
+### Swift Package Manager
+
+In Xcode: File → Add Package Dependencies, then enter
 
 ```
 https://github.com/shenxiang11/NestedPaging
 ```
 
-目前还没有版本 tag，请选 `main` 分支。或写进 `Package.swift`：
+No semantic version has been tagged yet. Depend on the `main` branch.
 
 ```swift
-.package(url: "https://github.com/shenxiang11/NestedPaging", branch: "main")
+dependencies: [
+    .package(url: "https://github.com/shenxiang11/NestedPaging", branch: "main")
+]
 ```
 
-本地路径：
+Local path:
 
 ```swift
 .package(path: "../NestedPaging")
 ```
 
-然后 `import NestedPaging`。
+```swift
+import NestedPaging
+```
 
-## 快速接入
+## Usage
+
+Implement `NestedPagingViewDelegate`, pin `NestedPagingView` to its container, then call `reloadData()`. Each child list implements `NestedPagingListViewDelegate` and must forward the callback from its own `scrollViewDidScroll(_:)`.
 
 ```swift
 import NestedPaging
+import UIKit
 
 final class PageViewController: UIViewController, NestedPagingViewDelegate {
     private let pagingView = NestedPagingView()
     private let headerView = YourHeaderView()
-    private let pinBar = NestedPagingPinBar(titles: ["动态", "作品"])
+    private let pinBar = NestedPagingPinBar(titles: ["Posts", "Works"])
 
     override func viewDidLoad() {
         super.viewDidLoad()
+
         pinBar.onSelectIndex = { [weak self] index in
             self?.pagingView.setCurrentListIndex(index, animated: true)
         }
+
         pagingView.delegate = self
         pagingView.listContainerDidScroll = { [weak self] _ in
             guard let self else { return }
             self.pinBar.setProgress(self.pagingView.currentListScrollProgress, animated: false)
         }
+
         view.addSubview(pagingView)
         pagingView.frame = view.bounds
         pagingView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
@@ -78,8 +89,6 @@ final class PageViewController: UIViewController, NestedPagingViewDelegate {
 }
 ```
 
-子列表只要交出自己的 `UIScrollView`：
-
 ```swift
 final class YourListView: UIView, NestedPagingListViewDelegate, UITableViewDelegate {
     private let tableView = UITableView()
@@ -87,62 +96,114 @@ final class YourListView: UIView, NestedPagingListViewDelegate, UITableViewDeleg
 
     func listView() -> UIView { self }
     func listScrollView() -> UIScrollView { tableView }
+
     func listViewDidScrollCallback(_ callback: @escaping (UIScrollView) -> Void) {
         scrollCallback = callback
     }
+
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         scrollCallback?(scrollView)
     }
 }
 ```
 
-分类栏可以用自带的 `NestedPagingPinBar`，也可以换成自己的指示器。
+Use `NestedPagingPinBar` for the pin header, or return any custom `UIView`.
 
-## 原理
+When `NestedPagingView` is flush with the top of the screen, the category bar pins below the navigation bar by default. If the container is constrained below `safeAreaLayoutGuide.topAnchor`, the automatic pin offset is `0`.
 
-核心不是「两个 ScrollView 叠在一起各滚各的」，而是 **同一记垂直手势同时交给外层和内层，再用 `contentOffset` 决定谁真的能动**。
+## API
 
-### 结构
+### NestedPagingView
 
-外层用一张 plain `UITableView`：
+| Member | Description |
+| --- | --- |
+| `delegate` | Supplies the header, pin bar, and child lists. |
+| `pinSectionHeaderVerticalOffset` | Distance from the container top at which the category bar pins. |
+| `automaticallyAdjustsPinSectionHeaderVerticalOffset` | Default `true`. When `true`, `pinSectionHeaderVerticalOffset` tracks `safeAreaInsets.top`. |
+| `automaticallyAdjustsListContentInset` | Default `true`. Adds the container’s bottom / left / right safe-area insets to each child list. |
+| `mainTableView` | Outer `UITableView` (plain). |
+| `listContainerView` | Horizontal pager. Child lists are created on demand. |
+| `currentListIndex` | Index of the current page. |
+| `currentScrollingListView` | Child `UIScrollView` currently participating in the vertical handoff. |
+| `currentListScrollProgress` | Horizontal page progress: `contentOffset.x / pageWidth`. |
+| `mainTableViewMaxContentOffsetY` | Maximum outer offset: `headerHeight - pinSectionHeaderVerticalOffset`. |
+| `reloadData()` | Reloads the delegate and refreshes the header, pager, and outer table. |
+| `setCurrentListIndex(_:animated:)` | Switches the child list. |
+| `mainTableViewDidScroll` | Vertical scroll callback for the outer table. |
+| `listContainerDidScroll` | Horizontal pager scroll callback. |
+| `didChangeListIndex` | Called when the current page index changes. |
+
+`NSCoder` initialization is unavailable. The type is `@MainActor`.
+
+### NestedPagingViewDelegate
+
+| Method | Description |
+| --- | --- |
+| `tableHeaderViewHeight(in:)` | Header height. |
+| `tableHeaderView(in:)` | Header view, assigned to the outer table’s `tableHeaderView`. |
+| `heightForPinSectionHeader(in:)` | Pin bar height. |
+| `viewForPinSectionHeader(in:)` | Pin bar view, used as the outer table’s section header. |
+| `numberOfLists(in:)` | Number of child lists. |
+| `pagingView(_:initListAt:)` | Creates the child list at `index`. Called only when that page enters the nearby range. |
+
+### NestedPagingListViewDelegate
+
+Any `UIScrollView` subclass can be a child list, including `UITableView` and `UICollectionView`.
+
+| Method | Description |
+| --- | --- |
+| `listView()` | Root view embedded in the pager. |
+| `listScrollView()` | Scroll view that participates in the vertical nest. |
+| `listViewDidScrollCallback(_:)` | Store the callback and invoke it from that scroll view’s `scrollViewDidScroll(_:)`. If it is not forwarded, vertical handoff does not work. |
+
+### NestedPagingPinBar
+
+Equal-width title bar with a sliding indicator. Optional.
+
+```swift
+let pinBar = NestedPagingPinBar(titles: ["Posts", "Works"], indicatorColor: .label)
+pinBar.onSelectIndex = { index in
+    pagingView.setCurrentListIndex(index, animated: true)
+}
+pinBar.setProgress(pagingView.currentListScrollProgress, animated: false)
+```
+
+## Scroll model
+
+The outer container is a plain `UITableView`:
 
 ```
 ┌─────────────────────────────┐
-│ tableHeaderView             │  封面 + 资料
+│ tableHeaderView             │  Header
 ├─────────────────────────────┤
-│ section header              │  分类栏，plain style 自带吸顶
+│ section header              │  Category bar (pins via plain style)
 ├─────────────────────────────┤
-│ 唯一的 cell                 │  高度 = 视口剩余高度
-│   └─ 横向 pager             │
-│        ├─ 列表 A            │
-│        └─ 列表 B            │
+│ Single cell                 │  Height = bounds.height − pin bar − pin offset
+│   └─ Horizontal paging      │
+│        ├─ List 0            │
+│        └─ List 1            │
 └─────────────────────────────┘
 ```
 
-cell 高度始终是「屏幕高度 − 分类栏 − 吸顶偏移」。分类栏贴顶之后，当前列表刚好铺满剩余视口。
+The outer table uses `contentInsetAdjustmentBehavior = .never` and `sectionHeaderTopPadding = 0`.
 
-### 垂直接力
+Vertically, the outer table and the current child list recognize the same `UIPanGestureRecognizer`. `contentOffset` decides which view actually moves.
 
-```text
-maxOffsetY = headerHeight - pinSectionHeaderVerticalOffset
+```
+maxOffsetY = tableHeaderViewHeight − pinSectionHeaderVerticalOffset
 ```
 
-默认会把 `pinSectionHeaderVerticalOffset` 对齐到 `safeAreaInsets.top`，分类栏停在导航栏下面；子列表会自动加上底部 / 左右安全区 inset，最后一行不会顶到 Home 指示条。若要把整个容器放在安全区内部，这两个值会变成 0，无需再手写。
+| Condition | Outer table | Child list |
+| --- | --- | --- |
+| Outer offset `< maxOffsetY` | Scrolls | Locked at top (including `adjustedContentInset.top`) |
+| Outer offset reaches `maxOffsetY` | Locked | Scrolls |
+| Child list has not returned to top | Locked at `maxOffsetY` | Scrolls |
+| Pull down after the child list returns to top | Scrolls; header re-enters | Locked at top |
 
-| 手指 | 外层 offset | 内层 offset | 实际在动的 |
-| --- | --- | --- | --- |
-| 往上滑，Header 还露着 | 增加 | 被重置为 0 | 外层 |
-| 继续往上，到达吸顶点 | 锁在 max | 开始增加 | 内层 |
-| 往下滑，内层还没到顶 | 锁在 max | 减少 | 内层 |
-| 内层回到 0 后再往下 | 减少 | 锁在 0 | 外层，Header 回来 |
+While the header is not pinned, child-list `bounces` is `false`. Only the current child list has `scrollsToTop = true`.
 
-横向切页是另一条独立的 paging `UIScrollView`。第一页再往右滑，手势让给系统返回。
+Horizontal paging uses a separate paging `UIScrollView` and does not share the vertical gesture. A rightward swipe on the first page does not begin horizontal recognition, so the system interactive-pop gesture can proceed.
 
-### 几个容易踩的点
+## Limitations
 
-- `sectionHeaderTopPadding = 0`，否则吸顶条上方会多出一截
-- 外层 `contentInsetAdjustmentBehavior = .never`，Header 才能顶到屏幕最上
-- Header 未吸顶时关掉子列表 bounce
-- 同一时间只让当前子列表 `scrollsToTop = true`
-
-从 Header 用力一甩时，外层滚到吸顶点会刹住，惯性不会灌进子列表。这是这套模型的已知取舍。
+A fast flick from the header stops when the outer table reaches `maxOffsetY`. Remaining inertia is not transferred to the current child list. This is inherent to the offset-locking model, not an outstanding bug.
