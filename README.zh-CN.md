@@ -6,9 +6,21 @@ UIKit 嵌套滚动容器。用于「顶部 Header 滚出视口、中间分类栏
 
 本仓库为独立实现，无第三方依赖。
 
-| 抖音 | 小红书 | X | Instagram |
-| :---: | :---: | :---: | :---: |
-| <img src="Docs/screenshots/douyin.png" width="220" alt="抖音"> | <img src="Docs/screenshots/xiaohongshu.png" width="220" alt="小红书"> | <img src="Docs/screenshots/x.png" width="220" alt="X"> | <img src="Docs/screenshots/instagram.png" width="220" alt="Instagram"> |
+**抖音**
+
+<img src="Docs/screenshots/douyin.png" width="220" alt="抖音">
+
+**小红书**
+
+<img src="Docs/screenshots/xiaohongshu.png" width="220" alt="小红书">
+
+**X**
+
+<img src="Docs/screenshots/x.png" width="220" alt="X">
+
+**Instagram**
+
+<img src="Docs/screenshots/instagram.png" width="220" alt="Instagram">
 
 示例工程：`Demo/NestedPagingDemo.xcodeproj`。以上页面共用同一套 `NestedPagingView`，差异仅在 Header、吸顶栏与子列表。Demo 另有「无分类栏」：Header + 一篇文章 `UIView`，没有分类栏。
 

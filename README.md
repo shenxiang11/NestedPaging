@@ -6,9 +6,21 @@ A UIKit nested-scrolling container for pages with a header that scrolls away, a 
 
 Standalone implementation. No third-party dependencies.
 
-| Douyin | Xiaohongshu | X | Instagram |
-| :---: | :---: | :---: | :---: |
-| <img src="Docs/screenshots/douyin.png" width="220" alt="Douyin"> | <img src="Docs/screenshots/xiaohongshu.png" width="220" alt="Xiaohongshu"> | <img src="Docs/screenshots/x.png" width="220" alt="X"> | <img src="Docs/screenshots/instagram.png" width="220" alt="Instagram"> |
+**Douyin**
+
+<img src="Docs/screenshots/douyin.png" width="220" alt="Douyin">
+
+**Xiaohongshu**
+
+<img src="Docs/screenshots/xiaohongshu.png" width="220" alt="Xiaohongshu">
+
+**X**
+
+<img src="Docs/screenshots/x.png" width="220" alt="X">
+
+**Instagram**
+
+<img src="Docs/screenshots/instagram.png" width="220" alt="Instagram">
 
 Example project: `Demo/NestedPagingDemo.xcodeproj`. The screens above share one `NestedPagingView`. Only the header, pin bar, and child lists differ. The Demo also includes **Header only**: a header plus one article `UIView`, with no category bar.
 
