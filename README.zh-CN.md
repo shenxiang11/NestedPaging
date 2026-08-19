@@ -22,7 +22,11 @@ UIKit 嵌套滚动容器。用于「顶部 Header 滚出视口、中间分类栏
 
 <img src="Docs/screenshots/instagram.png" width="220" alt="Instagram">
 
-示例工程：`Demo/NestedPagingDemo.xcodeproj`。以上页面共用同一套 `NestedPagingView`，差异仅在 Header、吸顶栏与子列表。Demo 另有「无分类栏」：Header + 一篇文章 `UIView`，没有分类栏。
+**无分类栏**
+
+<img src="Docs/screenshots/header-only.png" width="220" alt="无分类栏">
+
+示例工程：`Demo/NestedPagingDemo.xcodeproj`。前四个页面共用同一套 `NestedPagingView`，差异仅在 Header、吸顶栏与子列表。**无分类栏**不同：严格来说已不是嵌套滚动。没有分类栏，也没有第二层 `UIScrollView`，由外层 table 带着 Header 和一篇文章 `UIView` 一起滚。
 
 ## 要求
 
@@ -125,7 +129,9 @@ final class YourListView: UIView, NestedPagingListViewDelegate, UITableViewDeleg
 
 ## 无分类栏
 
-没有 tab 时不要再套一层 `UIScrollView`。`listView()` 返回普通 `UIView`，并实现 `listPreferredContentHeight(forWidth:)`，由外层 table 带着 Header 和正文一起滚。
+严格来说，这个场景已经不是嵌套滚动。嵌套滚动需要两层垂直 `UIScrollView`，并在 `maxOffsetY` 处接力。没有 tab 时只有一篇内容，再套一层 `UIScrollView` 是多余的。
+
+`listView()` 返回普通 `UIView`，并实现 `listPreferredContentHeight(forWidth:)`，由外层 table 带着 Header 和正文一起滚。
 
 ```swift
 func heightForPinSectionHeader(in pagingView: NestedPagingView) -> CGFloat { 0 }

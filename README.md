@@ -22,7 +22,11 @@ Standalone implementation. No third-party dependencies.
 
 <img src="Docs/screenshots/instagram.png" width="220" alt="Instagram">
 
-Example project: `Demo/NestedPagingDemo.xcodeproj`. The screens above share one `NestedPagingView`. Only the header, pin bar, and child lists differ. The Demo also includes **Header only**: a header plus one article `UIView`, with no category bar.
+**Header only**
+
+<img src="Docs/screenshots/header-only.png" width="220" alt="Header only">
+
+Example project: `Demo/NestedPagingDemo.xcodeproj`. The first four screens share one `NestedPagingView`. Only the header, pin bar, and child lists differ. **Header only** is different: strictly speaking it is not nested scrolling. There is no category bar and no second `UIScrollView` — the outer table scrolls a header and one article `UIView` together.
 
 ## Requirements
 
@@ -125,7 +129,9 @@ When `NestedPagingView` is flush with the top of the screen, the category bar pi
 
 ## Header only (no tabs)
 
-A page with no category bar should not nest a second `UIScrollView`. Return a plain `UIView` from `listView()`, implement `listPreferredContentHeight(forWidth:)`, and let the outer table scroll the header and content together.
+Strictly speaking, this scene is not nested scrolling. Nested scrolling needs two vertical scroll views and a handoff at `maxOffsetY`. A page with no tabs has only one piece of content, so a second `UIScrollView` is unnecessary.
+
+Return a plain `UIView` from `listView()`, implement `listPreferredContentHeight(forWidth:)`, and let the outer table scroll the header and content together.
 
 ```swift
 func heightForPinSectionHeader(in pagingView: NestedPagingView) -> CGFloat { 0 }
