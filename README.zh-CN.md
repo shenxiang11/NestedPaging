@@ -10,7 +10,7 @@ UIKit 嵌套滚动容器。用于「顶部 Header 滚出视口、中间分类栏
 | :---: | :---: | :---: | :---: |
 | <img src="Docs/screenshots/douyin.png" width="220" alt="抖音"> | <img src="Docs/screenshots/xiaohongshu.png" width="220" alt="小红书"> | <img src="Docs/screenshots/x.png" width="220" alt="X"> | <img src="Docs/screenshots/instagram.png" width="220" alt="Instagram"> |
 
-示例工程：`Demo/NestedPagingDemo.xcodeproj`。以上页面共用同一套 `NestedPagingView`，差异仅在 Header、吸顶栏与子列表。
+示例工程：`Demo/NestedPagingDemo.xcodeproj`。以上页面共用同一套 `NestedPagingView`，差异仅在 Header、吸顶栏与子列表。Demo 另有「无分类栏」：Header + 一篇文章 `UIView`，没有分类栏。
 
 ## 要求
 
@@ -111,6 +111,22 @@ final class YourListView: UIView, NestedPagingListViewDelegate, UITableViewDeleg
 
 将 `NestedPagingView` 贴齐屏幕顶边时，分类栏默认停在导航栏下方。若将容器约束在 `safeAreaLayoutGuide.topAnchor` 之下，自动计算的吸顶偏移为 `0`。
 
+## 无分类栏
+
+没有 tab 时不要再套一层 `UIScrollView`。`listView()` 返回普通 `UIView`，并实现 `listPreferredContentHeight(forWidth:)`，由外层 table 带着 Header 和正文一起滚。
+
+```swift
+func heightForPinSectionHeader(in pagingView: NestedPagingView) -> CGFloat { 0 }
+func numberOfLists(in pagingView: NestedPagingView) -> Int { 1 }
+
+func listPreferredContentHeight(forWidth width: CGFloat) -> CGFloat? {
+    // 文章 UIView 在该宽度下的高度
+    articleHeight
+}
+```
+
+此模式下 NestedPaging 按该高度撑开 cell，不再做垂直接力，并把底部安全区 inset 加在 `mainTableView` 上。Demo 里的「无分类栏」是白色圆角卡片压在 Header 上，并可滚进透明导航栏下面。
+
 ## API
 
 ### NestedPagingView
@@ -120,7 +136,7 @@ final class YourListView: UIView, NestedPagingListViewDelegate, UITableViewDeleg
 | `delegate` | 提供 Header、吸顶栏与子列表。 |
 | `pinSectionHeaderVerticalOffset` | 分类栏吸顶时距容器顶边的距离。 |
 | `automaticallyAdjustsPinSectionHeaderVerticalOffset` | 默认 `true`。为 `true` 时，`pinSectionHeaderVerticalOffset` 跟随 `safeAreaInsets.top`。 |
-| `automaticallyAdjustsListContentInset` | 默认 `true`。为子列表叠加容器的 bottom / left / right 安全区 inset。 |
+| `automaticallyAdjustsListContentInset` | 默认 `true`。为子列表叠加容器的 bottom / left / right 安全区 inset。若页面报告了内容高度，则加在 `mainTableView` 上。 |
 | `mainTableView` | 外层 `UITableView`（plain）。 |
 | `listContainerView` | 水平分页容器。子列表按需创建。 |
 | `currentListIndex` | 当前页索引。 |
@@ -148,13 +164,14 @@ final class YourListView: UIView, NestedPagingListViewDelegate, UITableViewDeleg
 
 ### NestedPagingListViewDelegate
 
-任意 `UIScrollView` 子类均可作为子列表，包括 `UITableView` 与 `UICollectionView`。
+任意 `UIScrollView` 子类均可作为子列表，包括 `UITableView` 与 `UICollectionView`。实现 `listPreferredContentHeight(forWidth:)` 时，普通 `UIView` 也可以。
 
 | 方法 | 说明 |
 | --- | --- |
 | `listView()` | 嵌入分页容器的根视图。 |
-| `listScrollView()` | 参与垂直嵌套的滚动视图。 |
+| `listScrollView()` | 参与垂直嵌套的滚动视图。若实现了内容高度，则不使用。 |
 | `listViewDidScrollCallback(_:)` | 保存回调，并在该滚动视图的 `scrollViewDidScroll(_:)` 中调用。未转发则垂直接力失效。 |
+| `listPreferredContentHeight(forWidth:)` | 可选，默认 `nil`。非 `nil` 时 cell 用该高度，由外层 table 滚整页，不再做内层接力。 |
 
 ### NestedPagingPinBar
 
@@ -201,6 +218,8 @@ maxOffsetY = tableHeaderViewHeight − pinSectionHeaderVerticalOffset
 | 子列表回到顶部后再下拉 | 滚动，Header 回入 | 锁定在顶部 |
 
 Header 未吸顶时，子列表 `bounces` 为 `false`。同一时刻仅当前子列表的 `scrollsToTop` 为 `true`。
+
+若 `listPreferredContentHeight(forWidth:)` 非 `nil`，cell 高度用该值，只由外层 table 滚动，外层不会锁在 `maxOffsetY`。
 
 水平分页由独立的 paging `UIScrollView` 处理，与垂直嵌套互不共用手势。第一页向右滑时不开始水平识别，以便系统返回手势生效。
 

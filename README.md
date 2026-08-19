@@ -10,7 +10,7 @@ Standalone implementation. No third-party dependencies.
 | :---: | :---: | :---: | :---: |
 | <img src="Docs/screenshots/douyin.png" width="220" alt="Douyin"> | <img src="Docs/screenshots/xiaohongshu.png" width="220" alt="Xiaohongshu"> | <img src="Docs/screenshots/x.png" width="220" alt="X"> | <img src="Docs/screenshots/instagram.png" width="220" alt="Instagram"> |
 
-Example project: `Demo/NestedPagingDemo.xcodeproj`. The screens above share one `NestedPagingView`. Only the header, pin bar, and child lists differ.
+Example project: `Demo/NestedPagingDemo.xcodeproj`. The screens above share one `NestedPagingView`. Only the header, pin bar, and child lists differ. The Demo also includes **Header only**: a header plus one article `UIView`, with no category bar.
 
 ## Requirements
 
@@ -111,6 +111,22 @@ Use `NestedPagingPinBar` for the pin header, or return any custom `UIView`.
 
 When `NestedPagingView` is flush with the top of the screen, the category bar pins below the navigation bar by default. If the container is constrained below `safeAreaLayoutGuide.topAnchor`, the automatic pin offset is `0`.
 
+## Header only (no tabs)
+
+A page with no category bar should not nest a second `UIScrollView`. Return a plain `UIView` from `listView()`, implement `listPreferredContentHeight(forWidth:)`, and let the outer table scroll the header and content together.
+
+```swift
+func heightForPinSectionHeader(in pagingView: NestedPagingView) -> CGFloat { 0 }
+func numberOfLists(in pagingView: NestedPagingView) -> Int { 1 }
+
+func listPreferredContentHeight(forWidth width: CGFloat) -> CGFloat? {
+    // Height of the article UIView at `width`
+    articleHeight
+}
+```
+
+In this mode NestedPaging sizes the cell to that height, skips vertical handoff, and applies the bottom safe-area inset to `mainTableView`. The Demo entry **Header only** shows a rounded white sheet that overlaps the header and can scroll under a transparent navigation bar.
+
 ## API
 
 ### NestedPagingView
@@ -120,7 +136,7 @@ When `NestedPagingView` is flush with the top of the screen, the category bar pi
 | `delegate` | Supplies the header, pin bar, and child lists. |
 | `pinSectionHeaderVerticalOffset` | Distance from the container top at which the category bar pins. |
 | `automaticallyAdjustsPinSectionHeaderVerticalOffset` | Default `true`. When `true`, `pinSectionHeaderVerticalOffset` tracks `safeAreaInsets.top`. |
-| `automaticallyAdjustsListContentInset` | Default `true`. Adds the container’s bottom / left / right safe-area insets to each child list. |
+| `automaticallyAdjustsListContentInset` | Default `true`. Adds the container's bottom / left / right safe-area insets to each child list, or to `mainTableView` when the page reports a preferred content height. |
 | `mainTableView` | Outer `UITableView` (plain). |
 | `listContainerView` | Horizontal pager. Child lists are created on demand. |
 | `currentListIndex` | Index of the current page. |
@@ -148,13 +164,14 @@ When `NestedPagingView` is flush with the top of the screen, the category bar pi
 
 ### NestedPagingListViewDelegate
 
-Any `UIScrollView` subclass can be a child list, including `UITableView` and `UICollectionView`.
+Any `UIScrollView` subclass can be a child list, including `UITableView` and `UICollectionView`. A plain `UIView` works when you report `listPreferredContentHeight(forWidth:)`.
 
 | Method | Description |
 | --- | --- |
 | `listView()` | Root view embedded in the pager. |
-| `listScrollView()` | Scroll view that participates in the vertical nest. |
-| `listViewDidScrollCallback(_:)` | Store the callback and invoke it from that scroll view’s `scrollViewDidScroll(_:)`. If it is not forwarded, vertical handoff does not work. |
+| `listScrollView()` | Scroll view that participates in the vertical nest. Unused when the page reports a preferred content height. |
+| `listViewDidScrollCallback(_:)` | Store the callback and invoke it from that scroll view's `scrollViewDidScroll(_:)`. If it is not forwarded, vertical handoff does not work. |
+| `listPreferredContentHeight(forWidth:)` | Optional. Default `nil`. When non-`nil`, the cell uses this height and the outer table scrolls the page; there is no inner handoff. |
 
 ### NestedPagingPinBar
 
@@ -201,6 +218,8 @@ maxOffsetY = tableHeaderViewHeight − pinSectionHeaderVerticalOffset
 | Pull down after the child list returns to top | Scrolls; header re-enters | Locked at top |
 
 While the header is not pinned, child-list `bounces` is `false`. Only the current child list has `scrollsToTop = true`.
+
+If `listPreferredContentHeight(forWidth:)` is non-`nil`, the cell height is that value and the outer table is the only scroller. The table is not locked at `maxOffsetY`.
 
 Horizontal paging uses a separate paging `UIScrollView` and does not share the vertical gesture. A rightward swipe on the first page does not begin horizontal recognition, so the system interactive-pop gesture can proceed.
 

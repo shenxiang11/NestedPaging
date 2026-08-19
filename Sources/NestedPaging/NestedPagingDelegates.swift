@@ -11,9 +11,19 @@ public protocol NestedPagingViewDelegate: AnyObject {
 }
 
 /// A child page. Any `UIScrollView` subclass works — table, collection, or your own.
+///
+/// For a page with no tabs, return a height from
+/// `listPreferredContentHeight(forWidth:)` and use a plain `UIView`.
+/// NestedPaging then sizes the cell to that height and lets the outer
+/// table scroll the header and content together.
 @MainActor
 public protocol NestedPagingListViewDelegate: AnyObject {
     func listView() -> UIView
     func listScrollView() -> UIScrollView
     func listViewDidScrollCallback(_ callback: @escaping (UIScrollView) -> Void)
+    func listPreferredContentHeight(forWidth width: CGFloat) -> CGFloat?
+}
+
+public extension NestedPagingListViewDelegate {
+    func listPreferredContentHeight(forWidth width: CGFloat) -> CGFloat? { nil }
 }

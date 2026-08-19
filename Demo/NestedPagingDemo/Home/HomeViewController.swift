@@ -16,11 +16,13 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
     private enum BasicRow: Int, CaseIterable {
         case profile
         case basic
+        case headerOnly
 
         var title: String {
             switch self {
             case .profile: "个人主页"
             case .basic: "基础用法"
+            case .headerOnly: "无分类栏"
             }
         }
 
@@ -28,6 +30,7 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
             switch self {
             case .profile: "封面吸顶、导航栏渐变、table + collection"
             case .basic: "最小接入：纯色 Header + 两个列表"
+            case .headerOnly: "Header + 白色卡片 UIView，外层一直向上滚"
             }
         }
     }
@@ -131,6 +134,8 @@ final class HomeViewController: UIViewController, UITableViewDataSource, UITable
                 navigationController?.pushViewController(ProfileDemoViewController(), animated: true)
             case .basic:
                 navigationController?.pushViewController(BasicDemoViewController(), animated: true)
+            case .headerOnly:
+                navigationController?.pushViewController(HeaderOnlyDemoViewController(), animated: true)
             }
         case .social:
             switch SocialRow.allCases[indexPath.row] {

@@ -62,6 +62,7 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
         listContainerView.reloadData()
         currentScrollingListView = listContainerView.currentList()?.listScrollView()
         mainTableView.reloadData()
+        updateScrollingMode()
     }
 
     public func setCurrentListIndex(_ index: Int, animated: Bool) {
@@ -87,6 +88,7 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
             lastBounds = bounds
             configureTableHeaderView()
             refreshListContainerHeight()
+            updateScrollingMode()
         }
     }
 
@@ -104,7 +106,9 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
 
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView === mainTableView else { return }
-        processMainTableViewDidScroll(scrollView)
+        if !usesMainTableScrolling {
+            processMainTableViewDidScroll(scrollView)
+        }
         mainTableViewDidScroll?(scrollView)
     }
 
@@ -163,10 +167,12 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
     func listContainerView(_ containerView: NestedPagingListContainerView, initListAt index: Int) -> NestedPagingListViewDelegate {
         let list = delegate?.pagingView(self, initListAt: index)
             ?? EmptyNestedPagingListView()
-        list.listViewDidScrollCallback { [weak self] scrollView in
-            self?.processListViewDidScroll(scrollView)
+        if list.listPreferredContentHeight(forWidth: max(bounds.width, 1)) == nil {
+            list.listViewDidScrollCallback { [weak self] scrollView in
+                self?.processListViewDidScroll(scrollView)
+            }
+            applySafeAreaInsetsToNewList(list.listScrollView())
         }
-        applySafeAreaInsetsToNewList(list.listScrollView())
         return list
     }
 
@@ -241,7 +247,38 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
         syncListBounce()
     }
 
+    private var usesMainTableScrolling: Bool {
+        guard bounds.width > 0, let list = listContainerView.currentList() else { return false }
+        return list.listPreferredContentHeight(forWidth: bounds.width) != nil
+    }
+
+    private func updateScrollingMode() {
+        let mainOnly = usesMainTableScrolling
+        mainTableView.showsVerticalScrollIndicator = mainOnly
+        mainTableView.scrollsToTop = mainOnly
+        mainTableView.bounces = true
+        if mainOnly {
+            mainTableView.shouldRecognizeSimultaneously = { _, _ in false }
+        } else {
+            mainTableView.shouldRecognizeSimultaneously = { [weak self] _, other in
+                self?.shouldRecognizeSimultaneously(with: other) ?? false
+            }
+        }
+        applyMainTableSafeAreaInsetIfNeeded()
+    }
+
+    private func applyMainTableSafeAreaInsetIfNeeded() {
+        guard automaticallyAdjustsListContentInset, usesMainTableScrolling else { return }
+        let bottom = safeAreaInsets.bottom
+        guard abs(mainTableView.contentInset.bottom - bottom) > 0.5 else { return }
+        var inset = mainTableView.contentInset
+        inset.bottom = bottom
+        mainTableView.contentInset = inset
+        mainTableView.verticalScrollIndicatorInsets.bottom = bottom
+    }
+
     private func syncListBounce() {
+        guard !usesMainTableScrolling else { return }
         let headerPinned = mainTableView.contentOffset.y >= mainTableViewMaxContentOffsetY - 0.5
         for list in listContainerView.validLists.values {
             list.listScrollView().bounces = headerPinned
@@ -280,6 +317,10 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
     }
 
     private func applyListSafeAreaInsets() {
+        if usesMainTableScrolling {
+            applyMainTableSafeAreaInsetIfNeeded()
+            return
+        }
         guard automaticallyAdjustsListContentInset else { return }
         let bottom = safeAreaInsets.bottom
         let left = safeAreaInsets.left
@@ -322,9 +363,15 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
     }
 
     private var listContainerSize: CGSize {
+        let width = bounds.width
+        if width > 0,
+           let list = listContainerView.currentList(),
+           let contentHeight = list.listPreferredContentHeight(forWidth: width) {
+            return CGSize(width: width, height: max(contentHeight, 0))
+        }
         let pinHeight = delegate?.heightForPinSectionHeader(in: self) ?? 0
         let height = max(bounds.height - pinHeight - pinSectionHeaderVerticalOffset, 0)
-        return CGSize(width: bounds.width, height: height)
+        return CGSize(width: width, height: height)
     }
 }
 
