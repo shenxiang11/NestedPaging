@@ -5,8 +5,9 @@ import UIKit
 ///
 /// Vertical handoff:
 /// 1. Main table and child list recognize the same pan.
-/// 2. While the header is still visible, the child list is locked at 0.
+/// 2. While the header is still visible, every child list is locked at the top.
 /// 3. After the pin bar reaches the top, the main table is locked and the child list scrolls.
+/// Header visibility is the source of truth: pulling the header back resets all lists.
 @MainActor
 public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewDelegate, NestedPagingListContainerViewDelegate {
     public weak var delegate: NestedPagingViewDelegate?
@@ -37,6 +38,7 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
     public private(set) var currentListIndex = 0
 
     private var lastBounds: CGRect = .zero
+    private var isReconcilingListOffsets = false
     private var appliedListBottomInset: CGFloat = 0
     private var appliedListLeftInset: CGFloat = 0
     private var appliedListRightInset: CGFloat = 0
@@ -179,6 +181,7 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
     func listContainerView(_ containerView: NestedPagingListContainerView, listDidScrollTo index: Int) {
         currentListIndex = index
         currentScrollingListView = containerView.currentList()?.listScrollView()
+        resetAllListsToTopIfHeaderVisible()
         updateScrollsToTop()
         didChangeListIndex?(index)
     }
@@ -221,6 +224,8 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
 
         if let list = currentScrollingListView, list.contentOffset.y > -list.adjustedContentInset.top {
             scrollView.contentOffset.y = maxOffsetY
+        } else if scrollView.contentOffset.y < maxOffsetY {
+            resetAllListsToTop()
         }
 
         if scrollView.contentOffset.y > maxOffsetY {
@@ -232,12 +237,13 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
     }
 
     private func processListViewDidScroll(_ scrollView: UIScrollView) {
+        if isReconcilingListOffsets { return }
+
         currentScrollingListView = scrollView
         let maxOffsetY = mainTableViewMaxContentOffsetY
-        let minListOffset = -scrollView.adjustedContentInset.top
 
         if mainTableView.contentOffset.y < maxOffsetY {
-            scrollView.contentOffset.y = minListOffset
+            resetAllListsToTop()
             scrollView.showsVerticalScrollIndicator = false
         } else {
             mainTableView.contentOffset.y = maxOffsetY
@@ -245,6 +251,27 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
         }
 
         syncListBounce()
+    }
+
+    /// Header visible ⇒ every list is at the top. A leftover offset on another
+    /// tab would later force the outer table back to `maxOffsetY`.
+    private func resetAllListsToTopIfHeaderVisible() {
+        guard !usesMainTableScrolling else { return }
+        guard mainTableView.contentOffset.y < mainTableViewMaxContentOffsetY else { return }
+        resetAllListsToTop()
+    }
+
+    private func resetAllListsToTop() {
+        guard !isReconcilingListOffsets else { return }
+        isReconcilingListOffsets = true
+        defer { isReconcilingListOffsets = false }
+
+        for list in listContainerView.validLists.values {
+            let scrollView = list.listScrollView()
+            let minOffsetY = -scrollView.adjustedContentInset.top
+            guard scrollView.contentOffset.y - minOffsetY > 0.5 else { continue }
+            scrollView.contentOffset = CGPoint(x: scrollView.contentOffset.x, y: minOffsetY)
+        }
     }
 
     private var usesMainTableScrolling: Bool {

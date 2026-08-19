@@ -230,10 +230,12 @@ maxOffsetY = tableHeaderViewHeight − pinSectionHeaderVerticalOffset
 
 | Condition | Outer table | Child list |
 | --- | --- | --- |
-| Outer offset `< maxOffsetY` | Scrolls | Locked at top (including `adjustedContentInset.top`) |
+| Outer offset `< maxOffsetY` | Scrolls | Every list locked at top (including `adjustedContentInset.top`) |
 | Outer offset reaches `maxOffsetY` | Locked | Scrolls |
 | Child list has not returned to top | Locked at `maxOffsetY` | Scrolls |
-| Pull down after the child list returns to top | Scrolls; header re-enters | Locked at top |
+| Pull down after the child list returns to top | Scrolls; header re-enters | Every list resets to the top |
+
+Header visibility is the source of truth. While the header is visible, every child list is kept at the top — not only the current one. Pulling the header back on another tab therefore discards leftover list offsets, so switching back cannot snap the page to the pin.
 
 While the header is not pinned, child-list `bounces` is `false`. Only the current child list has `scrollsToTop = true`.
 

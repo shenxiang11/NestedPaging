@@ -230,10 +230,12 @@ maxOffsetY = tableHeaderViewHeight − pinSectionHeaderVerticalOffset
 
 | 条件 | 外层 | 子列表 |
 | --- | --- | --- |
-| 外层 offset `< maxOffsetY` | 滚动 | 锁定在顶部（含 `adjustedContentInset.top`） |
+| 外层 offset `< maxOffsetY` | 滚动 | 所有列表锁定在顶部（含 `adjustedContentInset.top`） |
 | 外层到达 `maxOffsetY` | 锁定 | 滚动 |
 | 子列表尚未回到顶部 | 锁定在 `maxOffsetY` | 滚动 |
-| 子列表回到顶部后再下拉 | 滚动，Header 回入 | 锁定在顶部 |
+| 子列表回到顶部后再下拉 | 滚动，Header 回入 | 所有列表重置到顶部 |
+
+Header 可见性是唯一真相。Header 露着时，**所有**子列表都停在顶部，不只是当前页。因此在另一个 tab 把 Header 拉回来后，其他列表的残留 offset 会被清掉，再切回去不会突然吸顶。
 
 Header 未吸顶时，子列表 `bounces` 为 `false`。同一时刻仅当前子列表的 `scrollsToTop` 为 `true`。
 
