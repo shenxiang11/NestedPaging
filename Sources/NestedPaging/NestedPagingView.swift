@@ -222,10 +222,13 @@ public final class NestedPagingView: UIView, UITableViewDataSource, UITableViewD
     private func processMainTableViewDidScroll(_ scrollView: UIScrollView) {
         let maxOffsetY = mainTableViewMaxContentOffsetY
 
-        if let list = currentScrollingListView, list.contentOffset.y > -list.adjustedContentInset.top {
-            scrollView.contentOffset.y = maxOffsetY
-        } else if scrollView.contentOffset.y < maxOffsetY {
+        if scrollView.contentOffset.y < maxOffsetY {
+            // Header still visible: keep lists at top. A simultaneous pan
+            // often moves the list a few points; that must not jump the
+            // outer table to the pin position.
             resetAllListsToTop()
+        } else if let list = currentScrollingListView, list.contentOffset.y > -list.adjustedContentInset.top {
+            scrollView.contentOffset.y = maxOffsetY
         }
 
         if scrollView.contentOffset.y > maxOffsetY {
